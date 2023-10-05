@@ -3,5 +3,7 @@ env
 data/
 lm_cache
 .idea
+.vscode
+venv
 
 *.egg-info/

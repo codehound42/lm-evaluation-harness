@@ -30,6 +30,7 @@ def simple_evaluate(
     decontamination_ngrams_path=None,
     write_out=False,
     output_base_path=None,
+    prompt_format=None,
 ):
     """Instantiate and evaluate a model on a list of tasks.
 
@@ -62,6 +63,8 @@ def simple_evaluate(
         If True, write details about prompts and logits to json for all tasks
     :param output_base_path: str, optional
         Directory to which detailed eval info will be written. Defaults to present working dir.
+    :param prompt_format: str, optional
+        If specified, use the specified prompt format for the given task.
     :return
         Dictionary of results
     """
@@ -117,6 +120,7 @@ def simple_evaluate(
         decontamination_ngrams_path=decontamination_ngrams_path,
         write_out=write_out,
         output_base_path=output_base_path,
+        prompt_format=prompt_format,
     )
 
     # add info about the model and few shot config
@@ -158,6 +162,7 @@ def evaluate(
     decontamination_ngrams_path=None,
     write_out=False,
     output_base_path=None,
+    prompt_format=None,
 ):
     """Instantiate and evaluate a model on a list of tasks.
 
@@ -179,6 +184,8 @@ def evaluate(
         If True, write all prompts, logits and metrics to json for offline analysis
     :param output_base_path: str, optional
         Directory to which detailed eval info will be written. Defaults to present working dir
+    :param prompt_format: str, optional
+        If specified, use the specified prompt format for the given task.
     :return
         Dictionary of results
     """
@@ -309,7 +316,26 @@ def evaluate(
         #       they should end up next to each other.
 
         print("Running", reqtype, "requests")
-        resps = getattr(lm, reqtype)([req.args for req in reqs])
+
+        if prompt_format is not None:
+            try:
+                # Load the Format class from the file with the prompt_format variable name from lm_eval.prompt_formats and instantiate it
+                format = getattr(
+                    __import__(
+                        "lm_eval.prompt_formats." + prompt_format,
+                        fromlist=["Format"],
+                    ),
+                    "Format",
+                )()
+            except:
+                raise ValueError(
+                    "The prompt_format argument is not supported for this task."
+                )
+
+            resps = getattr(lm, reqtype)([(format.get_prompt([{"role": "user", "content": req.args[0]}]), req.args[1]) for req in reqs])
+        else:
+            resps = getattr(lm, reqtype)([req.args for req in reqs])
+
         resps = [
             x if req.index is None else x[req.index] for x, req in zip(resps, reqs)
         ]
