@@ -332,7 +332,7 @@ def evaluate(
                     "The prompt_format argument is not supported for this task."
                 )
 
-            resps = getattr(lm, reqtype)([(format.get_prompt([{"role": "user", "content": req.args[0]}]), req.args[1]) for req in reqs])
+            resps = getattr(lm, reqtype)([(format.get_prompt([{"role": "user", "content": req.args[0]}, {"role": "assistant", "content": ""}]), req.args[1]) for req in reqs])
         else:
             resps = getattr(lm, reqtype)([req.args for req in reqs])
 
